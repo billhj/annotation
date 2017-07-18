@@ -20,7 +20,7 @@ MainWindow::MainWindow(QWidget *parent) :
     model = new QStringListModel(this);
     ui->listView->setEditTriggers(QAbstractItemView::AnyKeyPressed |
                                 QAbstractItemView::DoubleClicked);
-    connect(model,SIGNAL(clicked(const QModelIndex)),this,SLOT(itemClicked(QModelIndex)));
+    connect(ui->listView,SIGNAL(clicked(const QModelIndex)),this,SLOT(itemClicked(QModelIndex)));
     connect(ui->openImage,SIGNAL(clicked()),this,SLOT(openSelectedImage()));
     connect(ui->saveboundingbox,SIGNAL(clicked()),this,SLOT(updateCSList()));
     connect(ui->writefile,SIGNAL(clicked()),this,SLOT(saveToTxt()));
@@ -64,7 +64,7 @@ bool MainWindow::loadFile(const QString &fileName)
 void MainWindow::updateDirImages()
 {
     QStringList stringList;
-    QDirIterator it(dir, QDir::Files, QDirIterator::Subdirectories);
+    QDirIterator it(dir, QDir::Files);//, QDirIterator::Subdirectories);
     while (it.hasNext()) {
         QFile f(it.next());
         QFileInfo filep(f.fileName());
@@ -107,8 +107,20 @@ void MainWindow::openSelectedImage()
 
 void MainWindow::itemClicked (QModelIndex index )
 {
-   //textEdit->setText(index.data().toString());
-    qDebug()<<"a";
+    if(!index.isValid()) return;
+    filename = index.data().toString();
+
+    QString fileName = dir+"/"+filename;
+    QImageReader reader(fileName);
+    reader.setAutoTransform(true);
+    const QImage newImage = reader.read();
+    if (newImage.isNull()) {
+        QMessageBox::information(this, QGuiApplication::applicationDisplayName(),
+                                 tr("Cannot load %1: %2")
+                                 .arg(QDir::toNativeSeparators(fileName), reader.errorString()));
+    }
+
+    setImage(newImage);
 }
 
 void MainWindow::setImage(const QImage &newImage)
